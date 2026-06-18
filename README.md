@@ -1,13 +1,13 @@
 # SentimentAI
 
-API REST d'analyse de sentiments pour les avis clients, développée en FastAPI/Python.
+API REST simple d'analyse de sentiments pour des textes courts, développée avec FastAPI et Python.
 
 ## Fonctionnalités
 
-- Analyse de texte et classification en trois catégories : POSITIF, NÉGATIF ou NEUTRE
-- Score de confiance accompagnant chaque prédiction
-- Endpoint de healthcheck pour les conteneurs et load balancers
-- Conteneurisée avec Docker et Docker Compose
+- Analyse de texte et classification en trois catégories : POSITIVE, NEGATIVE ou NEUTRAL
+- Score de confiance borné entre 0 et 1
+- Endpoint de healthcheck pour Docker et les contrôles d'intégrité
+- Exécution locale ou via Docker Compose
 
 ## Installation
 
@@ -32,7 +32,7 @@ pip install -r requirements.txt
 uvicorn src.main:app --reload
 ```
 
-### Mode production (avec Docker)
+### Mode production avec Docker
 
 ```bash
 docker compose up -d
@@ -69,7 +69,7 @@ Réponse attendue:
 ```json
 {
   "label": "POSITIVE",
-  "score": 0.7,
+  "score": 0.6,
   "text": "Ce produit est excellent !"
 }
 ```
@@ -80,27 +80,40 @@ Réponse attendue:
 sentiment-ai/
 ├── src/
 │   ├── __init__.py
-│   ├── main.py           # Application FastAPI
-│   ├── model.py          # Modèle de sentiment
-│   └── schemas.py        # Schémas Pydantic
+│   ├── main.py
+│   ├── model.py
+│   └── schemas.py
 ├── tests/
 │   ├── __init__.py
-│   └── test_api.py       # Tests unitaires
-├── Dockerfile            # Configuration Docker
-├── docker-compose.yml    # Orchestration des conteneurs
-├── Makefile              # Automatisation des tâches
-├── requirements.txt      # Dépendances Python
-└── README.md             # Ce fichier
+│   └── test_api.py
+├── Dockerfile
+├── docker-compose.yml
+├── Makefile
+├── requirements.txt
+└── README.md
 ```
 
 ## Commandes Makefile
 
-- `make build` : Construire l'image Docker
-- `make run` : Démarrer la stack Docker Compose
-- `make test` : Exécuter les tests dans Docker
-- `make stop` : Arrêter la stack
-- `make clean` : Nettoyer les conteneurs et images
-- `make tag` : Créer un tag Git
+- `make build` : construire l'image Docker
+- `make run` : démarrer la stack Docker Compose
+- `make test` : exécuter les tests dans Docker
+- `make stop` : arrêter la stack
+- `make clean` : nettoyer les conteneurs et l'image
+- `make tag` : créer un tag Git
+
+## Jenkins
+
+Le fichier [Jenkinsfile](Jenkinsfile) décrit un pipeline CI simple en trois étapes : récupération du code, construction de l'image Docker et exécution des tests dans le conteneur.
+
+Pour l’utiliser dans Jenkins :
+
+1. Créez un pipeline job ou un multibranch pipeline.
+2. Choisissez une source Git qui pointe vers ce dépôt.
+3. Vérifiez que le job lit le [Jenkinsfile](Jenkinsfile) à la racine du projet.
+4. Installez les plugins suggérés par Jenkins au premier démarrage, puis ajoutez au besoin `Pipeline`, `Git` et `Docker Pipeline`.
+
+Le pipeline archive aussi les rapports de test et de couverture dans `reports/`.
 
 ## Licence
 

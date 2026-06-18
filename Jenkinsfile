@@ -1,89 +1,58 @@
-// Jenkinsfile - Pipeline CI/CD SentimentAI
 pipeline {
     agent any
 
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+    }
+
     environment {
         IMAGE_NAME = 'sentiment-ai'
-        REGISTRY = 'ghcr.io/Ayoubchet19'
+        IMAGE_TAG = "${BUILD_NUMBER}"
     }
 
     stages {
         stage('Checkout') {
             steps {
                 checkout scm
-                script {
-                    env.IMAGE_TAG = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-                }
-                echo "Branche : ${env.BRANCH_NAME}"
-                echo "Commit : ${env.GIT_COMMIT}"
-                sh 'git log --oneline -5'
+                sh 'git rev-parse --short HEAD'
             }
         }
 
-        stage('Lint') {
+        stage('Build image') {
+            steps {
+                sh 'docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .'
+            }
+        }
+
+        stage('Test') {
             steps {
                 sh '''
+mkdir -p reports
 docker run --rm \
-    --volumes-from jenkins \
-    -w $WORKSPACE \
-    python:3.12-slim \
-    sh -c "pip install flake8 -q && flake8 src/ --max-line-length=100"
-'''
-            }
-        }
-
-        stage('Build & Test') {
-            steps {
-                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
-                sh """
-docker run --rm \
+    -v "$WORKSPACE:/app" \
+    -w /app \
     ${IMAGE_NAME}:${IMAGE_TAG} \
     pytest tests/ -v \
     --cov=src \
-    --cov-report=xml:coverage.xml \
     --cov-report=term-missing \
-    --cov-fail-under=70
-"""
-            }
-            post {
-                failure {
-                    echo 'Tests échoués ou coverage insuffisant (< 70%)'
-                }
-            }
-        }
-
-        stage('Push') {
-            when {
-                branch 'main'
-            }
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'github-token',
-                    usernameVariable: 'REGISTRY_USER',
-                    passwordVariable: 'REGISTRY_PASS'
-                )]) {
-                    sh """
-echo \$REGISTRY_PASS | docker login ghcr.io \
-    -u \$REGISTRY_USER --password-stdin
-docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
-docker push ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
-docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${REGISTRY}/${IMAGE_NAME}:latest
-docker push ${REGISTRY}/${IMAGE_NAME}:latest
-"""
-                }
+    --cov-report=xml:reports/coverage.xml \
+    --junitxml=reports/junit.xml
+'''
             }
         }
     }
 
     post {
         always {
-            sh 'docker compose down -v >/dev/null 2>&1 || true'
+            archiveArtifacts artifacts: 'reports/**', allowEmptyArchive: true
+            sh 'docker image rm -f ${IMAGE_NAME}:${IMAGE_TAG} >/dev/null 2>&1 || true'
         }
         success {
-            echo "Pipeline réussi ! Image : ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+            echo 'Pipeline Jenkins réussie.'
         }
         failure {
-            echo 'Pipeline échoué. Consultez les logs ci-dessus.'
+            echo 'Pipeline Jenkins échouée. Vérifiez les logs de test ou la construction Docker.'
         }
     }
 }

@@ -1,24 +1,19 @@
-version: "3.9"
-
 services:
   sentiment-ai:
     build: .
-    container_name: sentiment-staging
+    container_name: sentiment-ai
     ports:
-      - "8080:8000" # hôte:conteneur
+      - "8080:8000"
     environment:
       - ENV=development
-    networks:
-      - cicd-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test:
+        [
+          "CMD-SHELL",
+          'python -c "import urllib.request; urllib.request.urlopen(''http://localhost:8000/health'')"',
+        ]
       interval: 30s # fréquence des vérifications
       timeout: 10s # délai max avant échec
       retries: 3 # nombre d'échecs avant "unhealthy"
       start_period: 10s # délai de grâce au démarrage
-
-# Réseau dédié : Jenkins et SonarQube le rejoindront dans les TPs suivants
-networks:
-  cicd-network:
-    driver: bridge

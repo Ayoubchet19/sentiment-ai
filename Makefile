@@ -1,7 +1,6 @@
 IMAGE_NAME = sentiment-ai
 PORT = 8080
 
-# .PHONY indique que ces cibles ne correspondent pas à des fichiers réels
 .PHONY: build run test stop clean tag
 
 build:
@@ -10,8 +9,6 @@ build:
 run:
 	docker compose up -d
 
-# Lance les tests DANS le conteneur Docker pour tester exactement
-# ce qui sera en production (pas dans l'environnement local)
 test:
 	docker run --rm \
 		-v $(CURDIR):/app \
@@ -26,7 +23,6 @@ clean:
 	docker compose down
 	docker rmi $(IMAGE_NAME):latest || true
 
-# Crée un tag Git annoté et le pousse vers GitHub
 tag:
 	git tag -a v0.1.0 -m "Initial SentimentAI release"
 	git push origin v0.1.0
