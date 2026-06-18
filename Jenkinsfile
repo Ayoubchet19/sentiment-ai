@@ -30,8 +30,6 @@ pipeline {
                 sh '''
 mkdir -p reports
 docker run --rm \
-    -v "$WORKSPACE:/app" \
-    -w /app \
     ${IMAGE_NAME}:${IMAGE_TAG} \
     pytest tests/ -v \
     --cov=src \
