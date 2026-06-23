@@ -119,5 +119,3 @@ Le pipeline archive aussi les rapports de test et de couverture dans `reports/`.
 
 MIT
 
-## Test
-this is a test
