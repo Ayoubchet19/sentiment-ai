@@ -26,28 +26,15 @@ resource "docker_image" "sentiment" {
 
 # Conteneur staging
 resource "docker_container" "sentiment_staging" {
-  name           = var.container_name
-  image          = docker_image.sentiment.image_id
-  restart_policy = "unless-stopped"
+  name  = "sentiment-staging"
+  image = docker_image.sentiment_ai.name
 
-  networks_advanced {
-    name = docker_network.cicd.name
+  restart {
+    name = "unless-stopped"
   }
 
   ports {
-    internal = 8000
-    external = var.app_port
-  }
-
-  env = [
-    "ENV=staging",
-    "LOG_LEVEL=INFO",
-  ]
-
-  healthcheck {
-    test     = ["CMD", "curl", "-f", "http://localhost:8000/health"]
-    interval = "30s"
-    timeout  = "10s"
-    retries  = 3
+    internal = 8001
+    external = 8001
   }
 }
