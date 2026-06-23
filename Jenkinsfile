@@ -153,24 +153,38 @@ docker run --rm \
         }
 
         stage('Push') {
-            when { branch 'main' }
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'github-token',
-                    usernameVariable: 'REGISTRY_USER',
-                    passwordVariable: 'REGISTRY_PASS'
-                )]) {
-                    sh """
+    when {
+    expression {
+        env.GIT_BRANCH == 'origin/main' ||
+        env.GIT_BRANCH == 'main'
+    }
+}
+    steps {
+        withCredentials([usernamePassword(
+            credentialsId: 'github-token',
+            usernameVariable: 'REGISTRY_USER',
+            passwordVariable: 'REGISTRY_PASS'
+        )]) {
+            sh """
 echo \$REGISTRY_PASS | docker login ghcr.io \
-    -u \$REGISTRY_USER --password-stdin
+-u \$REGISTRY_USER --password-stdin
+
+docker tag ${IMAGE_NAME}:${IMAGE_TAG} \
+${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
+
 docker push ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
 """
-                }
-            }
         }
+    }
+}
 
         stage('IaC Apply') {
-            when { branch 'main' }
+            when {
+    expression {
+        env.GIT_BRANCH == 'origin/main' ||
+        env.GIT_BRANCH == 'main'
+    }
+}
             steps {
                 dir('infra') {
                     sh 'terraform init -input=false'
@@ -183,7 +197,12 @@ terraform apply -auto-approve \
         }
 
         stage('Deploy Staging') {
-            when { branch 'main' }
+            when {
+    expression {
+        env.GIT_BRANCH == 'origin/main' ||
+        env.GIT_BRANCH == 'main'
+    }
+}
             steps {
                 sh 'curl -f http://localhost:8001/health || exit 1'
             }
