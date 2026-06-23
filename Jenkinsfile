@@ -36,20 +36,24 @@ docker run --rm \
 stage('IaC Validate') {
     steps {
         sh '''
-        docker run --rm \
-        --volumes-from jenkins \
-        -w /var/jenkins_home/jobs/sentiment-ai-pipeline/workspace/infra \
-        hashicorp/terraform:latest \
-        init -backend=false -input=false
-        '''
+docker run --rm \
+    --volumes-from jenkins \
+    -w $WORKSPACE/infra \
+    hashicorp/terraform:latest \
+    init -backend=false -input=false
 
-        sh '''
-        docker run --rm \
-        --volumes-from jenkins \
-        -w /var/jenkins_home/jobs/sentiment-ai-pipeline/workspace/infra \
-        hashicorp/terraform:latest \
-        validate
-        '''
+docker run --rm \
+    --volumes-from jenkins \
+    -w $WORKSPACE/infra \
+    hashicorp/terraform:latest \
+    fmt -check
+
+docker run --rm \
+    --volumes-from jenkins \
+    -w $WORKSPACE/infra \
+    hashicorp/terraform:latest \
+    validate
+'''
     }
 }
 
