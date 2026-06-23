@@ -20,15 +20,15 @@ resource "docker_network" "cicd" {
 
 # Image Docker SentimentAI -- image LOCALE buildee par Jenkins
 resource "docker_image" "sentiment" {
-  name           = "sentiment-ai:${var.image_tag}"
-  keep_locally   = true
+  name         = "sentiment-ai:${var.image_tag}"
+  keep_locally = true
 }
 
 # Conteneur staging
 resource "docker_container" "sentiment_staging" {
-  name             = var.container_name
-  image            = docker_image.sentiment.image_id
-  restart_policy   = "unless-stopped"
+  name           = var.container_name
+  image          = docker_image.sentiment.image_id
+  restart_policy = "unless-stopped"
 
   networks_advanced {
     name = docker_network.cicd.name
