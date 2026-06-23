@@ -118,6 +118,3 @@ Le pipeline archive aussi les rapports de test et de couverture dans `reports/`.
 ## Licence
 
 MIT
-
-## Test
-this is a test
