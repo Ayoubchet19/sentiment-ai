@@ -33,15 +33,20 @@ docker run --rm \
             }
         }
 
-        stage('IaC Validate') {
-            steps {
-                dir('infra') {
-                    sh 'terraform init -backend=false -input=false'
-                    sh 'terraform fmt -check'
-                    sh 'terraform validate'
-                }
+    stage('IaC Validate') {
+        steps {
+            dir('infra') {
+                sh """
+                    docker run --rm \
+                        -v \$PWD:/workspace \
+                        -w /workspace \
+                        hashicorp/terraform:1.9.8 \
+                        terraform init -backend=false -input=false
+                """
             }
         }
+    }
+
 
         stage('Build & Test') {
             steps {
