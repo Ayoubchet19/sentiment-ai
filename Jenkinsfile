@@ -33,27 +33,25 @@ docker run --rm \
             }
         }
 
-        stage('IaC Validate') {
-        steps {
-            dir('infra') {
-                sh """
-                    docker run --rm \
-                        -v \$PWD:/workspace \
-                        -w /workspace \
-                        hashicorp/terraform:light \
-                        terraform init -backend=false -input=false
-                """
+stage('IaC Validate') {
+    steps {
+        sh '''
+        docker run --rm \
+        --volumes-from jenkins \
+        -w /var/jenkins_home/jobs/sentiment-ai-pipeline/workspace/infra \
+        hashicorp/terraform:latest \
+        init -backend=false -input=false
+        '''
 
-                sh """
-                    docker run --rm \
-                        -v \$PWD:/workspace \
-                        -w /workspace \
-                        hashicorp/terraform:light \
-                        terraform validate
-                """
-            }
-        }
+        sh '''
+        docker run --rm \
+        --volumes-from jenkins \
+        -w /var/jenkins_home/jobs/sentiment-ai-pipeline/workspace/infra \
+        hashicorp/terraform:latest \
+        validate
+        '''
     }
+}
 
 
         stage('Build & Test') {
