@@ -1,8 +1,4 @@
-variable "image_tag" {
-  description = "Tag de l'image Docker a deployer"
-  type        = string
-  default     = "latest"
-}
+
 
 # Port 8080 reserve a Jenkins -- staging sur 8001
 variable "app_port" {
