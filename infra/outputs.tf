@@ -8,7 +8,4 @@ output "app_url" {
   value       = "http://localhost:${var.app_port}"
 }
 
-output "network_name" {
-  description = "Nom du reseau Docker cree"
-  value       = docker_network.cicd.name
-}
+

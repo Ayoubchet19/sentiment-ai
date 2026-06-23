@@ -26,9 +26,7 @@ resource "docker_container" "sentiment_staging" {
   name  = "sentiment-staging"
   image = docker_image.sentiment_ai.name
 
-  restart {
-    name = "unless-stopped"
-  }
+
 
   ports {
     internal = 8001
