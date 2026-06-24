@@ -7,29 +7,44 @@ terraform {
   }
 }
 
-provider "docker" {}
 
-variable "image_tag" {
-  type = string
+# Linux / WSL
+provider "docker" {
+  host = "unix:///var/run/docker.sock"
 }
 
-resource "docker_image" "sentiment_ai" {
-  name = "sentiment-ai:${var.image_tag}"
+resource "docker_network" "cicd" {
+  name = "cicd-network"
+}
 
-  build {
-    context    = "../"
-    dockerfile = "../Dockerfile"
-  }
+resource "docker_image" "sentiment" {
+  name         = "sentiment-ai:${var.image_tag}"
+  keep_locally = true
 }
 
 resource "docker_container" "sentiment_staging" {
-  name  = "sentiment-staging"
-  image = docker_image.sentiment_ai.name
+  name    = var.container_name
+  image   = docker_image.sentiment.image_id
+  restart = "unless-stopped"
 
-
+  networks_advanced {
+    name = docker_network.cicd.name
+  }
 
   ports {
-    internal = 8001
-    external = 8001
+    internal = 8000
+    external = var.app_port
+  }
+
+  env = [
+    "ENV=staging",
+    "LOG_LEVEL=INFO",
+  ]
+
+  healthcheck {
+    test     = ["CMD", "curl", "-f", "http://localhost:8000/health"]
+    interval = "30s"
+    timeout  = "10s"
+    retries  = 3
   }
 }

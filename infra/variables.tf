@@ -1,8 +1,11 @@
+variable "image_tag" {
+  description = "Tag de l'image Docker à déployer"
+  type        = string
+  default     = "latest"
+}
 
-
-# Port 8080 reserve a Jenkins -- staging sur 8001
 variable "app_port" {
-  description = "Port expose en staging"
+  description = "Port exposé en staging"
   type        = number
   default     = 8001
 }
@@ -14,7 +17,7 @@ variable "container_name" {
 }
 
 variable "registry" {
-  description = "Registry Docker (ex: ghcr.io/monpseudo)"
+  description = "Registry Docker (ex : ghcr.io/monpseudo)"
   type        = string
-  default     = "ghcr.io/ayoubchet19"
+  default     = "ghcr.io/VOTRE_PSEUDO"
 }

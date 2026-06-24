@@ -146,6 +146,9 @@ pipeline {
         }
 
         stage('Push') {
+            when {
+                    branch 'main'
+            }
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'github-token',
@@ -178,16 +181,13 @@ pipeline {
         stage('Deploy Staging') {
             when { branch 'main' }
             steps {
-                echo "Déploiement de ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} en staging ..."
-                sh """
-                # Arrêter le staging précédent proprement et nettoyer les volumes orphelins si nécessaire
-                docker compose -f docker-compose.yml -p staging down 2>/dev/null || true
-                
-                # Démarrer la nouvelle version en arrière-plan (mode détaché)
-                docker compose -f docker-compose.yml -p staging up -d
-                
-                echo "Staging disponible sur http://localhost:8001"
-                """
+                echo "Vérification du staging déployé par Terraform sur http://localhost:8001 ..."
+                sh '''
+                echo "Attente démarrage (10s)..."
+                sleep 10
+                curl -f http://localhost:8001/health
+                echo "Staging OK"
+                '''
             }
         }
 
@@ -230,7 +230,6 @@ pipeline {
 
     post {
         always {
-            sh 'docker compose down -v 2>/dev/null || true'
         }
         success {
             echo "Pipeline réussi ! Image : ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
