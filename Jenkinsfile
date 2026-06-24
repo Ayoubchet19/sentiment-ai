@@ -47,32 +47,26 @@ pipeline {
         stage('Build & Test') {
             steps {
                 sh '''
-                # Construire l'image Docker
                 docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
 
-                # Supprimer un éventuel conteneur test-runner résiduel
                 docker rm -f test-runner 2>/dev/null || true
 
-                # Lancer les tests en nommant le conteneur pour copier coverage.xml
                 set +e
                 docker run \
-                -e CI=true \
-                --name test-runner \
-                ${IMAGE_NAME}:${IMAGE_TAG} \
-                pytest tests/ -v --cov=src --cov-report=xml:/tmp/coverage.xml --cov-report=term-missing --cov-fail-under=70
+                  -e CI=true \
+                  --name test-runner \
+                  ${IMAGE_NAME}:${IMAGE_TAG} \
+                  pytest tests/ -v --cov=src --cov-report=xml:/tmp/coverage.xml --cov-report=term-missing --cov-fail-under=70
                 TEST_EXIT_CODE=$?
                 set -e
 
-                # Copier coverage.xml depuis le conteneur vers le workspace
                 docker cp test-runner:/tmp/coverage.xml ./coverage.xml 2>/dev/null || true
                 docker rm -f test-runner 2>/dev/null || true
 
-                # FIX COVERAGE DEFINITIF : On supprime la racine virtuelle /app pour forcer les chemins relatifs
                 if [ -f coverage.xml ]; then
-                    sed -i 's|/app/||g' coverage.xml
+                  sed -i 's|/app/||g' coverage.xml
                 fi
 
-                # Retourner le code de sortie des tests
                 exit $TEST_EXIT_CODE
                 '''
             }
@@ -90,7 +84,6 @@ pipeline {
             steps {
                 withSonarQubeEnv('sonarqube') {
                     sh '''                    
-                    # FIX DROITS : Exécution propre avec --user root pour générer le report-task.txt sans encombre
                     docker run --rm \
                         --user root \
                         --network cicd-network \
@@ -116,7 +109,6 @@ pipeline {
         stage('Quality Gate') {
             steps {
                 timeout(time: 15, unit: 'MINUTES') {
-                    // Attend le résultat asynchrone du Quality Gate SonarQube
                     waitForQualityGate abortPipeline: true
                 }
             }
@@ -124,8 +116,6 @@ pipeline {
 
         stage('Security Scan') {
             steps {
-                // --exit-code 1 : fail si une CVE HIGH ou CRITICAL est trouvée
-                // --format table : rapport lisible dans les logs Jenkins
                 sh """
                 docker run --rm \
                     -v /var/run/docker.sock:/var/run/docker.sock \
@@ -147,7 +137,7 @@ pipeline {
 
         stage('Push') {
             when {
-                    branch 'main'
+                branch 'main'
             }
             steps {
                 withCredentials([usernamePassword(
@@ -200,20 +190,16 @@ pipeline {
                     echo "Attente démarrage (10s)..."
                     sleep 10
 
-                    # 1. L’app répond
                     curl -f http://localhost:8001/health || exit 1
                     echo "/health OK"
 
-                    # 2. Les métriques sont exposées
                     curl -s http://localhost:8001/metrics | grep -q sentiment_predictions_total || exit 1
                     echo "/metrics OK -- métriques SentimentAI présentes"
 
-                    # 3. Prometheus scrape l’app
-                    sleep 20 # attendre au moins 1 scrape (15s)
+                    sleep 20
                     curl -s "http://localhost:9090/api/v1/query?query=up{job='sentiment-ai'}" | grep -q '"value":.*"1"' || exit 1
                     echo "Prometheus scrape sentiment-ai : UP"
 
-                    # 4. Grafana répond
                     curl -f http://localhost:3000/api/health || exit 1
                     echo "Grafana OK"
                 '''
@@ -226,10 +212,11 @@ pipeline {
                 }
             }
         }
-}
+    }
 
     post {
         always {
+            sh 'docker compose down -v 2>/dev/null || true'
         }
         success {
             echo "Pipeline réussi ! Image : ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
